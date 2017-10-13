@@ -1,0 +1,7 @@
+TITLE: Erik Naggum Rants
+DATE: 2017-09-20
+UUID: a08eb0d3-c420-40d5-8e12-bbff457afcbd
+DESCRIPTION: A collection of Erik Naggum rants
+TAGS: Erik Naggum SGML XML Lisp Markup
+-----------------------------------------
+I was recently made aware of [Erik Naggum](https://en.wikipedia.org/wiki/Erik_Naggum)

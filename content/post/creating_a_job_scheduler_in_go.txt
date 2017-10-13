@@ -1,0 +1,59 @@
+TITLE: Creating a Job Scheduler in Go
+DATE: 2017-09-21
+UUID: 98d6136b-f86f-4f41-af61-c34eca641edf
+DESCRIPTION: A deep dive into Go's buffered channels and goroutines with this look at how to create a job dispatcher
+TAGS: go goroutines channels buffered concurrency programming job dispatcher scheduling scheduler
+---------------------------------
+I was recently given the task of creating a web service in Go that would allow users to kick off long running processes. By long running I mean around 5 to 10 minutes. Upon making the request the caller should receive an id which they can then use to query the service for the status of the job. 
+
+A naive approach to this problem would be to simply create a job per request and to set it running in its own goroutine -- this was indeed the approach I took for the MVP. This strategy however has the obvious problem that if the job is particularly CPU intensive, kicking off too many jobs at once would cause the system to slow down and each job would take longer than expected. In the worst case this could even grind the system to a halt.
+
+## Scheduling to the Rescue
+
+To prevent the problems mentioned above we can use scheduling. In this scheme we define a number of workers who are able to perform the task. When a request comes in we check the pool of available workers to see if any of them are free. If no worker is free we store the job request until such time as a worker becomes available. When a worker does become available we assign the job to him and remove it from the list of pending jobs.
+
+There are lots of scheduling strategies (known as _scheduling disciplines_) for allocating jobs to workers. The simpliest of these, and indeed the most appropriate for my usecase if the _First in, first out_ strategy, where by the job requests that were made first will be the ones that are assigned a worker the soonest. As we'll see, this is also aligns perfectly with Go's buffered channels.
+
+## Requirements
+
+1. An endpoint for kicking of a job which responds with a job identifier.
+2. An endpoint for querying the status of a job with a job identifier.
+3. A dispatcher for assigning jobs to workers.
+4. A Queue for allowing jobs to stack up when no worker is available.
+
+## Creating a Job
+
+Let's start by creating an endpoint to kick off a job.
+
+<pre><code satzbau="go">package main
+&nbsp;
+import (
+	"fmt"
+	"net/http"
+)
+&nbsp;
+const address = "localhost:8080"
+&nbsp;
+func main() {
+	http.HandleFunc("/start-job", createJob)
+	http.HandleFunc("/status/*", status)
+&nbsp;
+	fmt.Printf("Server listening on %s\n", Address)
+	err := http.ListenAndServe(address, nil)
+	if err != nil {
+		panic(1)
+	}
+}
+</code></pre>
+
+Here I'm using Go's `net/http` package for defining the two routes and starting the web server. I've created the route `/start-job` for kicking of a new job and the route `/status/*` for querying the status of an existing job.
+
+At time of writing, Go's native `net/http` package does not support variables in routes, but this is not problem: the second handler will match any route beginning with `/status/`, so we can simply use a regex to extract the job identifier from the path.
+
+Right, we now have our two routes defined and our server initialisation code, the next step is to implement the `createJob` handler.
+
+## The Job Pool
+
+Creating and retrieving jobs is the lion's share of this service and as such, warrants its own package. I shall create a `jobpool` package to encapsulate this functionality. Let's look at some code:
+
+

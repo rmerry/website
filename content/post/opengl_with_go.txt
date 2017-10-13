@@ -1,0 +1,37 @@
+TITLE: An Introduction to OpenGL with Go
+DATE: 2017-08-17
+UUID: 728c63e8-49a9-44f7-adf1-deee0e718431
+DESCRIPTION: An article that explores how to use OpenGL with Go
+TAGS: go opengl graphics
+----------------
+In this article we will look at how to use OpenGL in Go. It is my opinion that Go is an ideal language in which explore OpenGL and graphics programming in general due to its simple sintax lack of object hierarchies, inheritance and the like. This simplicity allows you to focus purely on the algorithm.
+
+The end goal here is to create a program which draws a [Sierpinski Gasket](https://en.wikipedia.org/wiki/Sierpinski_triangle), an attractive triangular fractal that's surprisingly simple to implement.
+
+So without further ado, let's get started!
+
+## Creating a Window with glfw in Go
+
+Before we can do anything with OpenGL we must create a space in which our graphical creations can manifest (a window); we do with the GLFW library. According to their website:
+
+>GLFW is an Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan development on the desktop. It provides a simple API for creating windows, contexts and surfaces, receiving input and events.
+
+The advantage of using this library is that it's cross platform, meaning we should be able to write once and compile on any of the popular platforms.
+
+You will need to install GLFW on your system, you will find instructions for doing so in the download section of their website: [glfw.org](http://www.glfw.org).
+
+Once you have done installing the GLFW libraries, we can install the [GLFW for Go](https://github.com/go-gl/glfw) package:
+
+  go get -u github.com/go-gl/glfw/v3.2/glfw
+
+Now let's go ahead and create or main program file and type the following:
+
+<pre>
+some code here<br/>
+func main() {<br/>
+   do something special
+}
+</pre>
+
+Now...
+

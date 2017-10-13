@@ -1,0 +1,128 @@
+body {
+  margin: 14px 0px;
+  background-color: #fff2e2;
+  font: normal 14pt Baskerville, "Baskerville Old Face", "Hoefler Text", Garamond, "Times New Roman", serif;
+}
+
+pre {
+  background-color: #ffffff;
+  padding: 10px;
+}
+
+code {
+  font-size: 12pt;
+  line-height: 12px;
+  width: 100%;
+}
+
+img {
+  border: 0px;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: #002876;
+} a:active {
+  color: #8a1616;
+}
+
+.code-block {
+  width: 100%;
+  background-color: #fff;
+  overflow: auto;    
+  scrollbar-base-color:#ffeaff
+}
+
+.comments {
+  margin-top: 20px;
+}
+
+.copyright {
+  font-size: 6pt;
+  text-align: right;
+}
+
+.date {
+  font-size: 9pt;
+  text-transform: uppercase;
+  margin-top: 0px;
+  display: inline-block;
+  width: 100%;
+  text-align: left;
+}
+
+.date-in-article {
+  font-size: 7pt;
+  text-transform: uppercase;
+  display: inline-block;
+  width: 100%;
+  text-align: right;
+}
+
+.post-list-item {
+  margin-bottom: 2px;
+}
+
+.thick-hr { 
+    border: 0;
+    border-top: 2px solid #000;
+    margin-bottom: 0;
+}
+
+.thin-hr { 
+    border: 0;
+    border-top: 1px solid #000;
+}
+
+.flex-container {
+  width: 100%;
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  justify-content: center;
+}
+
+#centred-wrapper {
+  max-width: 600px;
+  min-width: 100px;
+  padding: 0px 20px 0px 20px;
+}
+
+.homepage-link {
+  text-decoration: none;
+}
+
+.homepage-link:hover {
+  font-weight: bold;
+}
+
+.homepage-link:visited {
+  color: #000;
+}
+
+.article>h1 {
+  margin-top: 4px;
+  font: bold 20pt "Courier New";
+  text-align: right;
+}
+
+.article>h2 {
+  font: bold 16pt "Courier New";
+  text-align: left;
+}
+
+.article>p {
+  font: normal 14pt Baskerville, "Baskerville Old Face", "Hoefler Text", Garamond, "Times New Roman", serif;
+  line-height: 24px;
+  margin: 1.4em 0;
+  text-align: justify;
+}
+
+.article>blockquote {
+  font: italic 12pt Baskerville, "Baskerville Old Face", "Hoefler Text", Garamond, "Times New Roman", serif;
+  border-left: solid 1px;
+  padding-left: 5px;
+}

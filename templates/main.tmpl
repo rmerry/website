@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="description" content="{% block entry %}{% ifdef DESCRIPTION %}{{ DESCRIPTION }}{% else %}{{ SITE_TAGLINE }}{% endif %}{% endblock %}" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="{{ BASE_URL }}/assets/css/main.css" rel="stylesheet" type="text/css" />
+    <link href="{{ BASE_URL }}/assets/css/satzbau.css" rel="stylesheet" type="text/css" />
+    <link href="{{ BASE_URL }}/atom.xml" rel="alternate" type="application/atom+xml" title="{{ SITE_TITLE }}" />
+    <link rel="icon" href="/assets/favicon.ico" sizes="16x16 32x32 48x48 64x64" type="image/vnd.microsoft.icon" />
+    <title>{{ SITE_TITLE }}{% block entry %}{% ifdef TITLE %} - {{ TITLE }}{% endif %}{% endblock %}</title>
+  </head>
+  <body>
+    <div class="flex-container">
+      <div id="centred-wrapper">
+        <header> 
+          {% if MENU == "Home" %}
+          <img src="{{ BASE_URL }}/assets/images/banner.gif" alt="{{ SITE_TITLE }} banner" width="100%" />
+          <hr class="thick-hr" />
+          <p>bitsociety is a website on programming and other things, by <a href="{{ BASE_URL }}/about/">Richard Merry</a> of <a href="https://zattoo.com/ch/en/">Zattoo</a></p>
+          <hr class="thin-hr" />
+          {% else %}
+          <a class="homepage-link" href="{{ BASE_URL }}/">
+            <img src="{{ BASE_URL }}/assets/images/banner.gif" alt="{{ SITE_TITLE }} banner" width="120" />
+          </a>
+          <hr class="thick-hr" />
+          {% endif %}
+        </header>
+        {% block listing %}
+        <article>
+          <h3 class="post-list-item">
+            <a href="{{ BASE_URL }}/post/{{ FILENAME }}/">{{ TITLE }}</a>
+          </h3>
+          <span class="date">{{ DATE_FORMATTED }}</span>
+        </article>
+        {% endblock %}
+        {% block listing_once %} 
+        <ul class="pager">
+          {% ifdef PREVIOUS_PAGE %}
+          <li class="previous">
+            <a href="{{ BASE_URL }}/page/{{ PREVIOUS_PAGE }}/">&larr; Newer</a>
+          </li>
+          {% endif %}
+          {% ifdef NEXT_PAGE %}
+          <li class="next">
+            <a href="{{ BASE_URL }}/page/{{ NEXT_PAGE }}/">Older &rarr;</a>
+          </li>
+          {% endif %}
+        </ul>
+        {% endblock %}
+        {% block entry %}
+        <article class="article">
+          {% ifdef IS_POST %}
+          <span class="date-in-article">{{ DATE_FORMATTED }}</span>
+          {% endif %}
+          <h1 class="article-heading">{{ TITLE }}</h1>
+          {{ CONTENT }}
+          {% ifdef IS_POST %}
+          <div class="comments" id="disqus_thread"></div>
+          <script>
+            var disqus_config=function(){this.page.identifier='{{ UUID }}';this.page.title='{{ TITLE }}';};
+            (function(){var d=document,s=d.createElement('script');s.src='https://bitsociety.disqus.com/embed.js';s.setAttribute('data-timestamp',+new Date());(d.head||d.body).appendChild(s);})();
+          </script>
+          {% endif %}
+        </article>
+        {% endblock %}
+        <footer>
+          <hr class="thin-hr" />
+          <p class="copyright">Copyright © 2017 Richard Merry. All Rights Reserved. </p>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,288 @@
+TITLE: A Quick Delve into Goroutines and Channels
+DATE: 2017-09-14
+UUID: 3d665f90-bf87-4aec-ba40-5fcb874c4e27
+DESCRIPTION: A quick look at how to use goroutines and channels with code samples
+TAGS: go goroutines channels concurrency programming frequency dictionary
+-----------------------------------------
+Perhaps Go's jump-off-the-page -- _slap you around the chops_ -- feature, is its concurrency model. Through the mechanisms of _goroutines_ and _channels_, we can easily create independent threads (goroutines) while effortlessly joining them together with pipes (channels) to allow the back and fourth flow of data.
+
+In this article I will demonstrate -- through the aid of a small but _interesting_ little code sample -- the creation and use of goroutines and channels.
+
+## The Task
+
+And so it begins... 
+
+I recently had an idea that it would be nice to be able to read in a large body of text, perhaps a book, or better still, a collection thereof, and determine the most frequently occurring words. I know, a simple problem but not one without merit: this kind of data is useful for generating things like frequency dictionaries. It's also a great opportunity to try out Go's concurrency features. You see for this project, I would like the document reader code to run concurrently with the frequency list generation code; effectively working like a production line. The document reader placed words on the conveyor belt to be picked up down the line by the frequency analyser. 
+
+Now perhaps this task is a little contrived as we will simply be reading the words from a single file. Imagine however if the gathering of documents was a long running process that was scanning web pages for list of words, a concurrency model would provide us with a real time view over the frequency data.
+
+Right, let's make a start.
+
+## The Goroutines
+
+This project will have two goroutines: the goroutine we create explicitly for the document reader logic, and the implicit _main_ goroutine that all Go programs have. Let's look at some code:
+
+<pre><code satzbau="go">func main() {
+  out := make(chan string)
+  go getWords(out)
+&nbsp;
+  for {
+    word := <-out
+    fmt.Println(word)
+  }
+}
+&nbsp;
+func getWords(out<- chan string) {
+  // read file word-by-word and put
+  // words on the `out' channel
+}
+</code></pre>
+
+The code above is quite a dense little nugget; it actually encompasses the core structure of our application. To start out, the program enters at function `main` and creates a new channel:
+
+<pre><code satzbau="go">out := make(chan string)</code></pre>
+
+Here we're declaring a variable named `out` which is of type `chan string` -- so basically a channel which can transmit only string data. Note we also have to use the `make` built-in in order to create a channel. Let's take a look at the next line:
+
+<pre><code satzbau="go">go getWords(out)</code></pre>
+
+Here we are invoking the `getWords` function, but notice the `go` keyword immediately preceding it: this tells Go to invoke the function but to do so inside a new goroutine. So the execution of the `main` function does not stop and wait until the `getWords` function completes, these two functions are now running concurrently.
+
+On the next line we introduce a loop with no explicit exit clause (more on this later):
+
+<pre><code satzbau="go">for {
+	word := <-out
+	fmt.Println(word)
+}</code></pre>
+
+And in the above loop we introduce the last of the trinity, where we assign the value coming over the `out` pipe to the variable `word`:
+
+<pre><code satzbau="go">word := <-out</code></pre>
+
+Notice the left arrow coming out of the `out` channel variable; this indicates that we're reading data from the channel, we'll also look at how to push data onto a channel. This is a blocking operation, the execution of the `main` goroutine will wait here until a packet of data arrives over the channel, whence it will be assigned to the `word` variable and the proceeding lines will be executed. For the first pass we simply print the word to standard out.
+ 
+Finally let's take a closer look at the definition of the `getWords` function:
+
+<pre><code satzbau="go">func getWords(out<- chan string)</code></pre>
+
+Notice that here we declare the function as having a single parameter, `out`, which is also of type `chan string`. Pay close attention to the arrow syntax however: in this case it's pointing into the variable rather than away from it, indicating that this is a `sender channel` as opposed to a `receiver channel`.
+
+## The getWords Function
+
+Now let's fill in the blanks of the `getWords` function. We must read in a document -- for the sake of simplicity we'll hard-code the path to known text file -- and then break it into words. Here's a first stab at it:
+
+<pre><code satzbau="go">func getWords(out chan<- string) {
+	file, err := ioutil.ReadFile("doc.txt")
+	if err != nil {
+		panic(1)
+	}
+&nbsp;
+	for _, word := range strings.Fields(string(file)) {
+		out <- word
+	}
+}
+</code></pre>
+
+The first block utilises the `io/ioutil` package's `ReadFile` function to read the contents of the `doc.txt` text file into the `file` variable. A quick check of the docs for the `ReadFile` function reveal that it returns a byte array (`[]byte`). We of course perform the obligatory error checking.
+
+Next we utilise the `strings` package's `Fields` function to break the document into a string of words. Actually I'm using the term _word_ quite loosely here; this is what the documentation says:
+
+<blockquote><pre><code>func Fields(s string) []string
+    Fields splits the string s around each
+    instance of one or more consecutive
+    white space characters, as defined by
+    unicode.IsSpace, returning an array of
+    substrings of s or an empty list if s 
+    contains only white space.</code></pre></blockquote>
+
+So a word is simply a group of characters surrounded by whitespace; not exactly what we want but it will do for this demonstration. We then `range` over this collection of words, putting each word on the `out` channel:
+
+<pre><code satzbau="go">for _, word := range strings.Fields(string(file)) {
+	out <- word
+}</code></pre>
+
+Right, we now need a document, and one that is sufficiently large to give us some meaningful frequency data. For this I downloaded [Moby Dick](http://www.gutenberg.org/ebooks/2701) from [Project Gutenberg](http://www.gutenberg.org). It's a 1.2MB text file which will do nicely. After placing the text file (and renaming it `doc.txt`) in the same folder as the Go source file, we should be ready to run the program:
+
+<pre><code>$ go run wordfreq.go</code></pre>
+
+The program begins to output words to standard out! But wait, there's an error:
+
+<pre><code>> ...
+> eBooks,
+> and
+> how
+> to
+> subscribe
+> to
+> our
+> email
+> newsletter
+> to
+> hear
+> about
+> new
+> eBooks.
+> fatal error: all goroutines are asleep - deadlock!</code></pre>
+
+So the program was happy while there were words to process, but when we reached the end of the document we got a deadlock. This happened because the loop processing the words terminated after iterating over the document; the `getWords` function then ended releasing the `out` channel in the process, yet in the `main` goroutine our code is still waiting for data to come down the pipe:
+
+<pre><code satzbau="go">word := <-out</code></pre>
+
+We need a way to indicate that we're done with the channel, and that there will be no more data coming through it. For this purpose Go provides the `close()` built-in:
+
+<pre><code satzbau="go">func getWords(out chan<- string) {
+	file, err := ioutil.ReadFile("doc.txt")
+	if err != nil {
+		panic(1)
+	}
+&nbsp;
+	for _, word := range strings.Fields(string(file)) {
+		out <- word
+	}
+	close(out)
+}</code></pre>
+
+If we run the program now we don't get an error, but after displaying all the words the screen goes totally blank... curious. It turns out that when you try to read from a null channel, or a channel that has been closed, you simply get `nil` back. So our main loop is looping over the contents of a `nil` pipe, which resolves to `nil` and then prints this result to standard out, filling the screen with blank lines. So we also need someway of detecting in our main loop when the channel has been closed -- this is the missing exit clause we were talking about earlier.
+
+It turns out that a channel read operation actually returns two values: the value coming from the channel, and a boolean _ok_ value indicating that the read was successful. Note that the name _ok_ is simply a convention for this variable, but one I suggest you stick to. So we can alter our code so that it looks like this:
+
+<pre><code satzbau="go">func main() {
+	out := make(chan string)
+	go getWords(out)
+&nbsp;
+	for {
+		word, ok := <-out
+		if !ok {
+			break
+		}
+		fmt.Println(word)
+	}
+}</code></pre>
+
+_Ta-da_, it works! The program prints all the words and exits gracefully. But we can actually do better still; the `ok` variable and following `if` clause are a little ugly, Go provides some syntactic sugar. It turns out we can use Go's `range` built-in for looping over channels, and it will automatically detect when the channel has been closed:
+
+<pre><code satzbau="go">func main() {
+	out := make(chan string)
+	go getWords(out)
+&nbsp;
+	for word := range out {
+		fmt.Println(word)
+	}
+}</code></pre>
+
+I think you'll agree, that looks much cleaner.
+
+## Building a Frequency List
+
+Right, now to the fun part, instead of simply printing the words to standard out, let's tally them up as they come down the pipe. We'll then display a brief frequency summary at the end. For this purpose a _map_ is the most appropriate data structure:
+
+<pre><code satzbau="go">func main() {
+	out := make(chan string)
+	go getWords(out)
+&nbsp;
+	fl := make(map[string]int)
+	for word := range out {
+		_, ok := fl[word]
+		if !ok {
+			fl[word] = 1
+		} else {
+			fl[word] = fl[word] + 1
+		}
+	}
+}</code></pre>
+
+So firstly we create or _frequency list_ map named `fl`; it's a map of string values to integer values as we want to map words to their frequency count. The second value returned by an indexing operation into a `map` is a boolean indicating whether or not the item exists. Here we call that value `ok`, which again is convention. If the word already exists in the `map`, we simply increment its counter by 1:
+
+<pre><code satzbau="go">fl[word] = fl[word] + 1</code></pre>
+
+If on the other hand it does not exist, we add it to the `map` with an initial value of 1:
+
+<pre><code satzbau="go">fl[word] = 1</code></pre>
+
+And that's it, we now have our frequency counting code in place. All that's left is to display it.
+
+<pre><code satzbau="go">func main() {
+	out := make(chan string)
+	go getWords(out)
+&nbsp;
+	fl := make(map[string]int)
+	for word := range out {
+		_, ok := fl[word]
+		if !ok {
+			fl[word] = 1
+		} else {
+			fl[word] = fl[word] + 1
+		}
+	}
+&nbsp;
+	// invert the `fl' map in order to sort it
+	inverted := make(map[int]string)
+	indices := []int{}
+	for k, v := range fl {
+		inverted[v] = k
+		indices = append(indices, v)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(indices)))
+&nbsp;
+	for i := 0; i < 50; i++ {
+		fmt.Printf("%s\t\t%d\n", 
+			inverted[indices[i]], indices[i])
+	}
+}</code></pre>
+
+The code is a bit convoluted. Firstly we need to sort the map by frequencies so that we can display the most frequent words; but we cannot directly sort a map by values. We get around this problem by creating a new map (`inverted`), this time of type `map[int]string` so that we can index into it by frequency rather than by word. This still isn't enough though, we now need a sorted list of frequencies so we create a separate _slice_ of type int and we sort this in reverse order, these act as our sorted indices into the `inverted` map. We then print the first 50 most frequently occurring words. Here's the output I get from running it over my Moby Dick sample:
+
+<pre><code>> the   		 13765
+> of    		 6587
+> and   		 5951
+> a     		 4533
+> to    		 4510
+> in    		 3879
+> that  		 2693
+> his   		 2415
+> I     		 1724
+> with  		 1692
+> as    		 1599
+> is    		 1585
+> was   		 1566
+> it    		 1515
+> he    		 1494
+> for   		 1381
+> all   		 1311
+> at    		 1227
+> this  		 1169
+> by    		 1113
+> from  		 1065
+> not   		 1042
+> but   		 1034
+> be    		 991
+> on    		 915
+> so    		 785
+> you   		 784
+> or    		 758
+> one   		 753
+> have  		 752
+> had   		 751
+> were  		 645
+> But   		 637
+> their 		 611
+> are   		 586
+> an    		 579
+> they  		 570
+> some  		 569
+> my    		 560
+> which 		 557
+> him   		 554
+> The   		 549
+> like  		 544
+> upon  		 533
+> into  		 516
+> when  		 502
+> now   		 457
+> no    		 447
+> out   		 437
+> more  		 428</code></pre>
+
+And there we have it, the _perhaps slightly skewed_ list of the 50 most frequently used words in the text of Moby Dick, along with their frequency counts.
+
+The complete source code can be viewed [here](https://github.com/rmerry/blog_code_samples/blob/master/go/wordfreq.go).

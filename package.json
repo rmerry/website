@@ -1,0 +1,15 @@
+{
+  "name": "my-blog",
+  "version": "1.0.0",
+  "description": "An example repository that can be used as base for a blogc website.",
+  "main": "index.js",
+  "dependencies": {
+    "watch": "^1.0.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

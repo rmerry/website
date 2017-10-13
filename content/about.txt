@@ -1,0 +1,9 @@
+TITLE: About Me
+---------------
+My name is Richard Merry and am I am a software developer by trade. Originally from Leeds in the UK, I studied a Masters in Computing at the University of York. I am currently living and working in Berlin, Germany.
+
+In my spare time I love tinkering on a computer; I'm an Linux fan and an avid Vim user. I consider myself a polyglot developer, having no affiliation with any particular programming language.
+
+When I'm not on a computer you can probably find me moping around in a pub somewhere, or perhaps rambling on some hills and pastures. 
+
+<img src="../assets/images/me.jpg" alt="A photograph of Richard Merry with the Brandenburg Gate in the background" width="600" />

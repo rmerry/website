@@ -1,0 +1,73 @@
+TITLE: Getting to Grips with Git2go
+DATE: 2017-08-22
+UUID: ffc47c17-0638-4c8f-9030-43f89fd676e6
+DESCRIPTION: This article demonstrates how to use the git2go library to perform a number of common tasks with git
+TAGS: go git2go git
+-----------------------------------
+I was recently working on a project at work to build an asynchronous microservice that had to perform quite a few git operations over various repositories. The nature of the service isn't important but it involved cloning two repositories, creating a branch on one of them, adding files to it, committing the changes and pushing the new branch to the remote server. After some searching I decided on git2go, and I am glad I did; but initially it came as a annoiance and surprise that it didn't simply work the way the git command line interface does. Git2go is a bit more bare metal, which as I discovered this is exaclty what you want for a library like this because it gives you complete control. 
+
+For the rest of this article I'm going to document how to perform some of the basics with Git2go.
+
+## Cloning a Repository
+The actual cloning function itself is quite simple:
+
+This will work if your repository is public, but what if you want to clone a private repository -- as was my case. In this case we have to do a little bit more work. Firstly we must decide on our authentication scheme: I went with ssh so this is the method I will demonstrate here.
+
+Authentication is handled by creating a callbacks and passing it through on the `RemoteCallbacks` property of the `CloneOptions` property. Below you can see the `CloneOptions` and `RemoteCallbacks` struct definitions
+
+<pre class="code-block">
+<code>
+<span class="hljs-keyword">type</span> CloneOptions <span class="hljs-keyword">struct</span> {
+  *CheckoutOpts
+  *FetchOptions
+  Bare                 <span class="hljs-keyword">bool</span>
+  CheckoutBranch       <span class="hljs-keyword">string</span>
+  RemoteCreateCallback RemoteCreateCallback
+}
+&#32;
+<span class="hljs-keyword">type</span> RemoteCallbacks <span class="hljs-keyword">struct</span> {
+	SidebandProgressCallback TransportMessageCallback
+	CompletionCallback
+	CredentialsCallback
+	TransferProgressCallback
+	UpdateTipsCallback
+	CertificateCheckCallback
+	PackProgressCallback PackbuilderProgressCallback
+	PushTransferProgressCallback
+	PushUpdateReferenceCallback
+}
+</code>
+</pre>
+
+The property that we're interested in here is the `CredentialsCallback` property. The revised implementation is as follows:
+
+<pre class="code-block">
+<code>
+func makeCredentialsCallback() git.CredentialsCallback {
+	var called bool
+	return func(url string, usernameFromURL string, allowed_types git.CredType) (git.ErrorCode, *git.Cred) {
+		if called {
+			return git.ErrUser, nil
+		}
+		called = true
+		errCode, cred := git.NewCredSshKey(usernameFromURL, publicKeyFile, privateKeyFile, "")
+		return git.ErrorCode(errCode), &cred
+	}
+}
+&#32;
+func gitClone(url, path string, conf *config.Config) (*git.Repository, error) {
+	cloneOptions := &git.CloneOptions{
+    &git.FetchOptions{
+      RemoteCallbacks: git.RemoteCallbacks{
+        CredentialsCallback:      makeCredentialsCallback(),
+      },
+    }
+  }
+	return git.Clone(url, path, cloneOptions)
+}
+</code>
+</pre>
+
+One thing to note here is the use of the `called` boolean variable within the `makeCredentialsCallback`; this is also the reason that in my example the `makeCredentialsCallback` function itself returns a function of type `git.CredentialsCallback`, as this way the `called` variable will be lexically scoped to the generated function so its state will persist various calls to the `credentialsCallback` function. It turns out that if an `AuthError` is returned by the callback, the callback will simply be called again -- presumably under the assuption that it might eventually pass: this is not what we want. So if the function is called twice we can presume it is never going to succeed and we therefore throw a `git.ErrUser` error which does short circuit the process.
+
+Notice that here I'm using the variables `publicKeyFile` and `privateKeyFile`. These must be absolute paths to your public and private key files; directory expansion using tilde (~) and the like will not work here.

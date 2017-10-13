@@ -1,0 +1,71 @@
+TITLE: Using a Font with Ligatures in the Linux Terminal
+DATE: 2017-09-13
+UUID: 766d2c27-32bf-4965-bdc5-ec2915be40db
+DESCRIPTION: Setting up you Linux Terminal for a Font with Ligatures
+TAGS: linux terminal command line fonts ligatures vim fira-code
+---------------
+If you're anything like me, you're a stickler for jumping on the next bandwaggon in tech. And so it was when I was recently made aware of the [Fira-code](https://github.com/tonsky/FiraCode#terminal-support) font with coding ligatures -- I just had to have it.
+
+A ligature is a combination of two or more symbols into one, very desirable for coding where we often use combinations of symbols to represent ideas that otherwise exist as atoms in mathematical parlance: (>=, <=, != etc.) Notice the arrows and not equal to symbols in the image below:
+
+![An image showing an example of ligatures]
+(posts/ligature_example.gif)
+
+So off I set, installing the Fira-code font on my Debian Linux box, later to find to my dispare that ligatures were not supported on my terminal emulator of choice: URxvt. I was faced with a dilema; ligatures or my beloved terminal, I decided on former. I was surprised to find that still very few open source terminal emulators support ligatures. At time of writing there were only two clear choices:
+
+*Konsole
+*QTerminal
+
+I went with QTerminal because it's very lightweight and seems to adhere to the principles I hold most dear.
+
+The rest of this article documents how I arrived at a beautiful QTerminal set up with ligatures and a swanky colour scheme.
+
+## Installing Fira-code
+
+Note that these instructions may vary on your particular distribution, but this should at least give you an idea.
+
+Installation was actually quite simple, just copy and execute the script below into your terminal of choice:
+
+ $ mkdir -p ~/.fonts && echo 'for type in Bold Light Medium Regular Retina; do wget -O ~/.fonts/FiraCode-${type}.ttf "https://github.com/tonsky/FiraCode/blob/master/distr/ttf/FiraCode-${type}.ttf?raw=true"; done' > download.sh && bash download.sh && fc-cache -f
+
+**Note**: Never execute a script on your machine without first reading through it and making sure it's not going to do any damage!
+
+Right, if that all worked you should now have the Fira-code font installed on your machine and your font cache should be refreshed. You can varify this either with your favourite visual font viewer, or from the terminal with the following command:
+
+ $ fc-list | grep -i fira
+
+All being well you should see something similar to the below:
+
+ /home/richard/.fonts/FiraCode-Bold.ttf: Fira Code:style=Bold
+ /home/richard/.fonts/FiraCode-Medium.ttf: Fira Code,Fira Code Medium:style=Medium,Regular
+ /home/richard/.fonts/FuraMono-Medium Powerline.otf: Fira Mono for Powerline:style=Medium
+ /home/richard/.fonts/FiraCode-Retina.ttf: Fira Code,Fira Code Retina:style=Retina,Regular
+ /home/richard/.fonts/FuraMono-Bold Powerline.otf: Fira Mono for Powerline:style=Bold
+ /home/richard/.fonts/FiraCode-Light.ttf: Fira Code,Fira Code Light:style=Light,Regular
+ /home/richard/.fonts/FiraCode-Regular.ttf: Fira Code:style=Regular
+ /home/richard/.fonts/FuraMono-Regular Powerline.otf: Fira Mono for Powerline:style=Regular
+
+## Installing QTerminal
+
+On the [QTerminal github page](https://github.com/lxde/qterminal) they recommend building from source and the instructions seem simple enough. I however opted for installation via my distro's package manager:
+
+ $ sudo apt-get install qterminal
+
+Visually QTerminal isn't quite to my liking out of the box but it's pretty configurable. 
+
+![An image showing the QTerminal configuration panel]
+(qterminal_configuration.gif)
+
+After changing the settings as shown above my QTerminal set up was looking pretty similar to my previous URxvt set up except now we have ligatures (go ahead and type != or >= or .. etc). Yet there's was still one big issue here: the colour scheme.
+
+## Setting the QTerminal Colour Scheme
+
+On the face of things the QTerminal colour scheme doesn't look configurable; at least at the time of writing the preferences dialogue box contains no setting pertaingin to it; all is not lost however, it turns out QTerminal installs a bunch of colour schemes in /usr/share/qtermwidget5/color-schemes. From these I was able to create a QTerminal solarized colour scheme which I uploaded here:
+
+Put *.colorscheme files in ~/.config/qterminal.org/color-schemes
+
+is there an example of a colorscheme format anywhere
+Pre-defined schemes files in /usr/share/qtermwidget5/color-schemes are good example :-)
+
+ $ mkdir -p ~/.config/qterminal.org/color-schemes
+ $ sed -i 's/^colorScheme=.*$/colorScheme=SolarizedDark/' ~/.config/qterminal.org/qterminal.ini
